@@ -138,6 +138,20 @@
     border: 1px solid var(--ink);
   }
   .button[disabled] { opacity: 0.4; cursor: default; }
+  .chat-tag {
+    position: fixed;
+    right: 92px;
+    bottom: 26px;
+    z-index: 1000;
+    padding: calc(var(--u) / 3) 16px;
+    background: var(--accent);
+    color: var(--paper);
+    font: inherit;
+    font-weight: 700;
+    line-height: var(--u);
+    border: 0;
+    cursor: pointer;
+  }
 
   ol.steps {
     margin: 0;
@@ -179,6 +193,7 @@
     <p class="prose">Sixteen seats, one seating at 7:30 pm, set each night in a room that is empty after dark: a print shop, a florist's back room, a greenhouse. All day a circle on the map closes in on the door. One hour before dinner it shows you where to knock.</p>
     <div class="row">
       <a class="button" href="about.html">See How a Night Runs</a>
+      <button type="button" class="button quiet" data-open-chat>Ask the Chat Helper</button>
     </div>
     <figure>
       <video src="video.mp4" autoplay loop muted playsinline preload="auto" width="1280" height="720" aria-label="A short film of tonight's table being set"></video>
@@ -233,6 +248,17 @@
   </footer>
 
 </div>
+
+<button type="button" class="chat-tag" data-open-chat>Ask the Chat Helper</button>
+<script>
+document.querySelectorAll("[data-open-chat]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var open = document.getElementById("chtl-open-chat-icon");
+    if (window.Chatling && typeof window.Chatling.open === "function") window.Chatling.open();
+    else if (open) open.click();
+  });
+});
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>

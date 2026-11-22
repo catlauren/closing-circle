@@ -89,6 +89,28 @@
     line-height: var(--u);
     text-decoration: none;
   }
+  button.button { font: inherit; font-weight: 700; line-height: var(--u); cursor: pointer; }
+  .button.quiet {
+    background: transparent;
+    color: var(--ink);
+    padding: calc(var(--u) / 2 - 1px) var(--gutter);
+    border: 1px solid var(--ink);
+  }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chat-tag {
+    position: fixed;
+    right: 92px;
+    bottom: 26px;
+    z-index: 1000;
+    padding: calc(var(--u) / 3) 16px;
+    background: var(--accent);
+    color: var(--paper);
+    font: inherit;
+    font-weight: 700;
+    line-height: var(--u);
+    border: 0;
+    cursor: pointer;
+  }
   footer { border-top: 1px solid var(--rule); padding-top: calc(var(--u) - 1px); }
 
   @media (max-width: 720px) {
@@ -112,6 +134,9 @@
   <div class="intro">
     <h1>A dinner you have to find.</h1>
     <p class="prose">Closing Circle is one long table that moves. Each night it is set in a different Dallas neighbourhood, in a room that works by day and sits empty after dark: a print shop, a florist's back room, a potter's studio. Sixteen guests, five courses, one seating at 7:30 pm, $85 a seat.</p>
+    <div class="row">
+      <button type="button" class="button quiet" data-open-chat>Ask the Chat Helper</button>
+    </div>
   </div>
 
   <section aria-labelledby="why-title">
@@ -182,5 +207,16 @@
   </footer>
 
 </div>
+
+<button type="button" class="chat-tag" data-open-chat>Ask the Chat Helper</button>
+<script>
+document.querySelectorAll("[data-open-chat]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var open = document.getElementById("chtl-open-chat-icon");
+    if (window.Chatling && typeof window.Chatling.open === "function") window.Chatling.open();
+    else if (open) open.click();
+  });
+});
+</script>
 </body>
 </html>
