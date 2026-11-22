@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Closing Circle Supper Club</title>
+<meta name="description" content="A Dallas supper club with a hidden address. A circle on the map tightens through the day and shows the door one hour before dinner.">
+
+<!-- CHATBOT: replace 0000000000 in BOTH lines below with your own Chatling chatbot ID -->
+<script> window.chtlConfig = { chatbotId: "0000000000" } </script>
+<script async data-id="0000000000" id="chtl-script" type="text/javascript" src="https://chatling.ai/js/embed.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #111111;
+    --grey-1: #5a5a5a;
+    --grey-2: #f1f1f1;
+    --rule: #cfcfcf;
+    --accent: #b3261e;
+    --u: 24px;
+    --gutter: 24px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1c1c1c;
+      --ink: #e6e6e6;
+      --grey-1: #b0b0b0;
+      --grey-2: #2a2a2a;
+      --rule: #4a4a4a;
+      --accent: #ff8a7a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: var(--u);
+    overflow-wrap: break-word;
+  }
+  .page {
+    max-width: 1008px;
+    margin: 0 auto;
+    padding: var(--u) 16px calc(var(--u) * 4);
+    display: grid;
+    gap: calc(var(--u) * 2);
+  }
+  header.site {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 var(--gutter);
+  }
+  .name { font-weight: 700; }
+  nav { display: flex; gap: var(--gutter); }
+  a { color: var(--ink); }
+  nav a[aria-current="page"] { font-weight: 700; text-decoration: none; }
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  h1, h2, p, table, figure { margin: 0; }
+  h1 { font-size: 32px; line-height: calc(var(--u) * 2); font-weight: 700; }
+  h2 { font-size: 16px; line-height: var(--u); font-weight: 700; }
+  section, .intro { display: grid; gap: var(--u); }
+  .prose { max-width: 50ch; }
+  .secondary { color: var(--grey-1); }
+
+  video {
+    display: block;
+    width: 100%;
+    height: calc(var(--u) * 22);
+    object-fit: cover;
+    background: var(--grey-2);
+  }
+  figure { display: grid; gap: 0; }
+  figcaption { color: var(--grey-1); font-size: 14px; line-height: var(--u); }
+
+  .tracker {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--u) var(--gutter);
+    align-items: start;
+  }
+  #map {
+    height: calc(var(--u) * 16);
+    background: var(--grey-2);
+    z-index: 0;
+  }
+  #map .leaflet-tile-pane { filter: grayscale(1) contrast(1.05); }
+  .leaflet-container, .leaflet-container .leaflet-bar a, .leaflet-tooltip { font: inherit; }
+  .leaflet-container a { color: #111111; }
+  #map .leaflet-bar, #map .leaflet-bar a, #map .leaflet-bar a:first-child, #map .leaflet-bar a:last-child, #map .leaflet-tooltip { border-radius: 0; box-shadow: none; }
+  .leaflet-tooltip { font-weight: 700; color: #111111; border: 1px solid #111111; }
+
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: calc(var(--u) / 2) 0 calc(var(--u) / 2 - 1px);
+    border-bottom: 1px solid var(--rule);
+    font-weight: 400;
+  }
+  th { color: var(--grey-1); width: 42%; padding-right: 12px; }
+  td { font-weight: 700; }
+
+  .preview { display: grid; gap: var(--u); }
+  .scrub { display: grid; gap: 0; }
+  .scrub label { font-weight: 700; }
+  .preview input[type="range"] {
+    width: 100%;
+    height: var(--u);
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .row { display: flex; flex-wrap: wrap; gap: calc(var(--u) / 2) var(--gutter); align-items: center; }
+
+  .button {
+    display: inline-block;
+    padding: calc(var(--u) / 2) var(--gutter);
+    background: var(--ink);
+    color: var(--paper);
+    font: inherit;
+    font-weight: 700;
+    line-height: var(--u);
+    text-decoration: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .button.quiet {
+    background: transparent;
+    color: var(--ink);
+    padding: calc(var(--u) / 2 - 1px) var(--gutter);
+    border: 1px solid var(--ink);
+  }
+  .button[disabled] { opacity: 0.4; cursor: default; }
+
+  ol.steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0;
+    max-width: 50ch;
+    counter-reset: step;
+  }
+  ol.steps li { counter-increment: step; }
+  ol.steps li::before { content: counter(step) ". "; font-weight: 700; }
+  ol.steps strong { font-weight: 700; }
+
+  footer { display: grid; gap: var(--u); border-top: 1px solid var(--rule); padding-top: calc(var(--u) - 1px); }
+
+  @media (max-width: 720px) {
+    .tracker { grid-template-columns: 1fr; }
+    #map { height: calc(var(--u) * 13); }
+    video { height: calc(var(--u) * 9); }
+    h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="site">
+    <span class="name">Closing Circle Supper Club</span>
+    <nav aria-label="Pages">
+      <a href="index.html" aria-current="page">Tonight</a>
+      <a href="about.html">How It Works</a>
+    </nav>
+  </header>
+
+  <div class="intro">
+    <p class="secondary">Class lab site, ITOM 6216. AI used as an aid, reviewed by me.</p>
+    <h1>One table in Dallas. The address is a secret until 6:30.</h1>
+    <p class="prose">Sixteen seats, one seating at 7:30 pm, set each night in a room that is empty after dark: a print shop, a florist's back room, a greenhouse. All day a circle on the map closes in on the door. One hour before dinner it shows you where to knock.</p>
+    <figure>
+      <video src="video.mp4" autoplay loop muted playsinline preload="auto" width="1280" height="720" aria-label="A short film of tonight's table being set"></video>
+      <figcaption>Video generated with AI.</figcaption>
+    </figure>
+  </div>
+
+  <section aria-labelledby="tracker-title">
+    <h2 id="tracker-title">Tonight's Circle</h2>
+    <div class="tracker">
+      <figure>
+        <div id="map" role="img" aria-label="Map of Dallas with a circle around the area that holds tonight's door"></div>
+        <figcaption>The outlined circle holds tonight's door. Map data © OpenStreetMap contributors. Times are Dallas time.</figcaption>
+      </figure>
+      <div class="preview">
+        <table>
+          <tbody>
+            <tr><th scope="row">Night</th><td id="f-night">–</td></tr>
+            <tr><th scope="row">Room</th><td id="f-room">–</td></tr>
+            <tr><th scope="row">Door</th><td id="f-door">–</td></tr>
+            <tr><th scope="row">Door shown in</th><td id="f-count">–</td></tr>
+          </tbody>
+        </table>
+        <p class="secondary" id="f-mode" aria-live="polite">Showing live.</p>
+        <div class="scrub">
+          <label for="scrub">Preview the Day</label>
+          <input type="range" id="scrub" min="480" max="1170" step="15" value="480" aria-describedby="scrub-help">
+          <p class="secondary" id="scrub-help">Drag from 8:00 am to 7:30 pm to watch the circle close.</p>
+        </div>
+        <div class="row">
+          <button type="button" class="button quiet" id="live" disabled>Return to Live</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="steps-title">
+    <h2 id="steps-title">How to Find the Table</h2>
+    <ol class="steps">
+      <li><strong>Reserve a seat.</strong> Ask the chat helper in the corner of this page about dates, the menu and dietary needs.</li>
+      <li><strong>Watch the circle.</strong> It opens at 8:00 am, about 15 miles wide, and tightens all day. The kind of room is no secret; the street is.</li>
+      <li><strong>Knock at 7:30.</strong> At 6:30 pm the map shows the door. Dinner is five courses at one long table.</li>
+    </ol>
+    <div class="row">
+      <a class="button" href="about.html">See How a Night Runs</a>
+    </div>
+  </section>
+
+  <footer>
+    <p class="prose" id="xfactor"><strong>Extra feature: the closing circle.</strong> The map draws a circle that tightens through the day on Dallas time and shows tonight's door at 6:30 pm. It runs on a schedule, not GPS. Drag Preview the Day to watch a whole day in seconds.</p>
+    <p class="secondary">Concept site for ITOM 6216, Class 5 Lab, November 2026. Closing Circle is not a real business.</p>
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function () {
+  // Schedule, in minutes after midnight, Dallas time.
+  var OPEN = 8 * 60;            // circle starts to close
+  var REVEAL = 18 * 60 + 30;    // door is shown
+  var CLOSE = 22 * 60 + 30;     // night is over, tomorrow's circle appears
+  var R_MAX = 12000;            // metres, at 8:00 am
+  var R_MIN = 400;              // metres, just before the reveal
+  var R_DOOR = 150;             // metres, once the door is shown
+
+  // One neighbourhood per weekday, Sunday first. Points are street corners, not private addresses.
+  var NIGHTS = [
+    { hood: "Lakewood", room: "A plant nursery's greenhouse",        door: "near Abrams Road and Gaston Avenue",      lat: 32.8125, lng: -96.7513 },
+    { hood: "Bishop Arts", room: "A letterpress print shop",     door: "near Bishop Avenue and West 7th Street",  lat: 32.7493, lng: -96.8283 },
+    { hood: "Deep Ellum", room: "A guitar repair workshop",      door: "near Main Street and Crowdus Street",     lat: 32.7843, lng: -96.7837 },
+    { hood: "Lower Greenville", room: "A florist's back room", door: "near Greenville Avenue and Belmont Avenue", lat: 32.8136, lng: -96.7704 },
+    { hood: "Design District", room: "A furniture showroom", door: "near Dragon Street and Oak Lawn Avenue",  lat: 32.7925, lng: -96.8200 },
+    { hood: "Knox-Henderson", room: "A bookshop",  door: "near Knox Street and Travis Street",      lat: 32.8222, lng: -96.7905 },
+    { hood: "The Cedars", room: "A pottery studio",      door: "near South Akard Street and Belleview Street", lat: 32.7683, lng: -96.7935 }
+  ];
+  var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  function dallasNow() {
+    var parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago", weekday: "short", hour: "2-digit", minute: "2-digit",
+      day: "numeric", month: "numeric", year: "numeric", hourCycle: "h23"
+    }).formatToParts(new Date());
+    var p = {};
+    parts.forEach(function (x) { p[x.type] = x.value; });
+    return {
+      dow: SHORT.indexOf(p.weekday),
+      minutes: (parseInt(p.hour, 10) % 24) * 60 + parseInt(p.minute, 10),
+      key: parseInt(p.year, 10) * 372 + parseInt(p.month, 10) * 31 + parseInt(p.day, 10)
+    };
+  }
+
+  function clock(mins) {
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return (h % 12 || 12) + ":" + (m < 10 ? "0" : "") + m + (h < 12 ? " am" : " pm");
+  }
+
+  function duration(mins) {
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return (h ? h + " h " : "") + m + " min";
+  }
+
+  // Everything the page shows follows from the Dallas time alone.
+  function stateAt(now, minutes, isLive) {
+    var dow = now.dow, key = now.key, tomorrow = false;
+    if (isLive && minutes >= CLOSE) { dow = (dow + 1) % 7; key += 1; tomorrow = true; }
+    var night = NIGHTS[dow];
+    var revealed = !tomorrow && minutes >= REVEAL;
+    var radius;
+    if (tomorrow || minutes < OPEN) radius = R_MAX;
+    else if (revealed) radius = R_DOOR;
+    else radius = R_MAX * Math.pow(R_MIN / R_MAX, (minutes - OPEN) / (REVEAL - OPEN));
+
+    // The circle's centre sits off the door, so the middle never gives the door away.
+    var angle = ((key * 137.5) % 360) * Math.PI / 180;
+    var off = revealed ? 0 : radius * 0.6;
+    var lat = night.lat + (off * Math.cos(angle)) / 111320;
+    var lng = night.lng + (off * Math.sin(angle)) / (111320 * Math.cos(night.lat * Math.PI / 180));
+
+    return {
+      night: night, dayName: DAYS[dow], tomorrow: tomorrow, revealed: revealed,
+      radius: radius, lat: lat, lng: lng,
+      toReveal: tomorrow ? (24 * 60 - minutes) + REVEAL : REVEAL - minutes
+    };
+  }
+
+  var map = null, ring = null, door = null;
+
+  if (window.L) {
+    map = L.map("map", { scrollWheelZoom: false, zoomAnimation: false, fadeAnimation: false }).setView([32.78, -96.8], 10);
+    map.attributionControl.setPrefix(false);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    ring = L.circle([32.78, -96.8], { radius: R_MAX, color: "#b3261e", weight: 3, fillColor: "#b3261e", fillOpacity: 0.1 }).addTo(map);
+    door = L.circleMarker([32.78, -96.8], { radius: 8, color: "#111111", weight: 2, fillColor: "#b3261e", fillOpacity: 1 });
+    door.bindTooltip("Tonight's door", { permanent: true, direction: "top", offset: [0, -8] });
+  } else {
+    document.getElementById("map").textContent = "The map could not load. The table beside it still shows tonight's circle.";
+  }
+
+  var el = function (id) { return document.getElementById(id); };
+  var scrub = el("scrub"), liveBtn = el("live");
+  var previewing = false;
+
+  function render() {
+    var now = dallasNow();
+    var minutes = previewing ? parseInt(scrub.value, 10) : now.minutes;
+    var s = stateAt(now, minutes, !previewing);
+
+    el("f-night").textContent = s.dayName + (s.tomorrow ? " (tomorrow)" : "") + ", 7:30 pm";
+    el("f-door").textContent = s.revealed ? s.night.hood + ", " + s.night.door : "Hidden until 6:30 pm";
+    el("f-room").textContent = s.night.room;
+    var width = s.revealed ? "The door is shown." : "The circle is " + (2 * s.radius / 1609.344).toFixed(1) + " miles wide.";
+    el("f-count").textContent = s.revealed ? "Shown now" : duration(s.toReveal);
+    el("f-mode").textContent = previewing
+      ? "Showing a preview at " + clock(minutes) + ". " + width
+      : "Showing live, " + clock(now.minutes) + " Dallas time. " + width;
+    liveBtn.disabled = !previewing;
+    if (!previewing) scrub.value = Math.min(1170, Math.max(480, now.minutes - (now.minutes % 15)));
+
+    if (map) {
+      ring.setLatLng([s.lat, s.lng]);
+      ring.setRadius(s.radius);
+      if (s.revealed) { door.setLatLng([s.night.lat, s.night.lng]); door.addTo(map); }
+      else { door.remove(); }
+      map.fitBounds(ring.getBounds(), { animate: false, padding: [24, 24] });
+    }
+  }
+
+  scrub.addEventListener("input", function () { previewing = true; render(); });
+  liveBtn.addEventListener("click", function () { previewing = false; render(); });
+
+  render();
+  setInterval(function () { if (!previewing) render(); }, 20000);
+})();
+</script>
+</body>
+</html>
